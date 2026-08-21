@@ -14,11 +14,11 @@ service cloud.firestore {
     function isValidSurveyResponse(data) {
       return data.keys().hasAll(['department', 'name', 'answers', 'score', 'signatureData', 'createdAt']) &&
              data.keys().size() == 6 &&
-             data.department is string &&
-             data.name is string &&
+             data.department is string && data.department.size() <= 200 &&
+             data.name is string && data.name.size() <= 100 &&
              data.answers is map &&
              data.score is number &&
-             data.signatureData is string && data.signatureData.size() <= 500000 &&
+             data.signatureData is string && data.signatureData.size() <= 1000000 &&
              data.createdAt == request.time;
     }
 

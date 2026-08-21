@@ -32,6 +32,7 @@ export default function App() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
+  const [submitErrorMessage, setSubmitErrorMessage] = useState("");
 
   const handleAnswer = (questionId: number, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -41,6 +42,7 @@ export default function App() {
 
   const handleSubmit = async () => {
     let hasError = false;
+    setSubmitErrorMessage("");
 
     // Check personal info
     if (!department.trim()) {
@@ -79,29 +81,46 @@ export default function App() {
     
     setIsSubmitting(true);
     
-    // Calculate score
-    let correctCount = 0;
-    questions.forEach((q) => {
-      if (answers[q.id] === q.answer) {
-        correctCount++;
+    try {
+      // Calculate score
+      let correctCount = 0;
+      questions.forEach((q) => {
+        if (answers[q.id] === q.answer) {
+          correctCount++;
+        }
+      });
+      const finalScore = Math.round((correctCount / questions.length) * 100);
+      setScore(finalScore);
+
+      // Get signature base64
+      const canvas = signatureRef.current?.getTrimmedCanvas();
+      if (!canvas) {
+        setSignatureError("此為必填問題");
+        return;
       }
-    });
-    const finalScore = Math.round((correctCount / questions.length) * 100);
-    setScore(finalScore);
+      const signatureData = canvas.toDataURL("image/png");
 
-    // Get signature base64
-    const signatureData = signatureRef.current?.getTrimmedCanvas().toDataURL("image/png");
+      await submitSurvey({
+        department: department.trim(),
+        name: name.trim(),
+        answers,
+        score: finalScore,
+        signatureData
+      });
 
-    await submitSurvey({
-      department: department.trim(),
-      name: name.trim(),
-      answers,
-      score: finalScore,
-      signatureData
-    });
-
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+      setIsSubmitted(true);
+    } catch (err: any) {
+      console.error("Submit survey error:", err);
+      let message = "問卷提交失敗，請檢查網路連線或稍後再試。";
+      if (err?.message?.includes("逾時")) {
+        message = "網路連線逾時，請檢查連線後重新點擊「提交」。";
+      } else if (err?.message?.includes("PERMISSION_DENIED") || err?.message?.includes("Missing or insufficient permissions")) {
+        message = "資料庫權限驗證失敗，請重新整理頁面後再試。";
+      }
+      setSubmitErrorMessage(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClearSignature = () => {
@@ -324,6 +343,17 @@ export default function App() {
             </div>
           )}
         </div>
+
+        {/* Error message if submission fails */}
+        {submitErrorMessage && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-[14px] flex items-start gap-2 shadow-sm">
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="font-medium">提交未成功</div>
+              <div className="text-red-600 text-[13px] mt-0.5">{submitErrorMessage}</div>
+            </div>
+          </div>
+        )}
 
         {/* Submit */}
         <div className="pt-2 pb-8 flex items-center justify-between">

@@ -43,13 +43,34 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
-export async function submitSurvey(data: any) {
+export async function submitSurvey(data: {
+  department: string;
+  name: string;
+  answers: Record<string | number, string>;
+  score: number;
+  signatureData: string;
+}) {
   const pathForWrite = 'survey_responses';
   try {
-    await addDoc(collection(db, pathForWrite), {
-      ...data,
+    const stringAnswers: Record<string, string> = {};
+    Object.entries(data.answers).forEach(([k, v]) => {
+      stringAnswers[String(k)] = String(v);
+    });
+
+    const submitPromise = addDoc(collection(db, pathForWrite), {
+      department: data.department,
+      name: data.name,
+      answers: stringAnswers,
+      score: data.score,
+      signatureData: data.signatureData,
       createdAt: serverTimestamp(),
     });
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('網路連線逾時，請確認連線正常後重試')), 15000)
+    );
+
+    await Promise.race([submitPromise, timeoutPromise]);
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, pathForWrite);
   }

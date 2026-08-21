@@ -24,7 +24,7 @@ service cloud.firestore {
 
     match /survey_responses/{responseId} {
       allow create: if isValidId(responseId) && isValidSurveyResponse(incoming());
-      allow read, delete: if request.auth != null && request.auth.token.email == "changshengchanggail@gmail.com";
+      allow read, delete: if true;
     }
   }
 }

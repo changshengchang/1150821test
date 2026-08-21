@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "SurveyResponse": {
+      "title": "Survey Response",
+      "description": "A submitted survey response including answers and signature",
+      "type": "object",
+      "properties": {
+        "answers": {
+          "type": "object",
+          "description": "Record of question string answers"
+        },
+        "score": {
+          "type": "number",
+          "description": "Calculated score"
+        },
+        "signatureData": {
+          "type": "string",
+          "description": "Base64 png signature"
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who submitted"
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "The Email of the user who submitted"
+        },
+        "createdAt": {
+          "type": "timestamp"
+        }
+      },
+      "required": ["answers", "score", "signatureData", "userId", "userEmail", "createdAt"]
+    }
+  },
+  "firestore": {
+    "survey_responses/{responseId}": {
+      "schema": {
+        "$ref": "#/entities/SurveyResponse"
+      },
+      "description": "Contains submitted survey responses"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function incoming() { return request.resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // Validation Blueprint for SurveyResponse
+    function isValidSurveyResponse(data) {
+      return data.keys().hasAll(['department', 'name', 'answers', 'score', 'signatureData', 'createdAt']) &&
+             data.keys().size() == 6 &&
+             data.department is string &&
+             data.name is string &&
+             data.answers is map &&
+             data.score is number &&
+             data.signatureData is string && data.signatureData.size() <= 500000 &&
+             data.createdAt == request.time;
+    }
+
+    match /survey_responses/{responseId} {
+      allow create: if isValidId(responseId) && isValidSurveyResponse(incoming());
+      allow read, delete: if request.auth != null && request.auth.token.email == "changshengchanggail@gmail.com";
+    }
+  }
+}
